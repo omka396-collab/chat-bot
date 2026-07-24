@@ -11,24 +11,15 @@
     "allowSyntheticDefaultImports": true,
     "sourceMap": false,
     "outDir": "./dist",
-    "rootDir": "./src"
-    "baseUrl": "./",
+    "rootDir": "./src",
     "incremental": true,
     "skipLibCheck": true,
+    "ignoreDeprecations": "5.0",
     "paths": {
       "~/*": ["./src/*"]
     }
   },
   "include": [
-    "**/*.js",
-    "**/*.ts"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "**/*.test.ts",
-    "**/*.spec.ts",
-    "**e2e**",
-    "**mock**"
+    "src/**/*"
   ]
 }
