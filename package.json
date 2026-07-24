@@ -8,7 +8,7 @@
     "lint": "eslint . --no-ignore",
     "dev": "npm run lint && nodemon --signal SIGKILL  ./src/app.ts",
     "build": "tsc",
-    "start": "node ./dist/app.js"
+    "start": "node ./dist/src/app.js"
   },
   "keywords": [],
   "dependencies": {
