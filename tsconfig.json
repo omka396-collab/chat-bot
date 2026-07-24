@@ -11,8 +11,8 @@
     "allowSyntheticDefaultImports": true,
     "sourceMap": false,
     "outDir": "./dist",
+    "rootDir": "./src"
     "baseUrl": "./",
-    "rootDir": "./",
     "incremental": true,
     "skipLibCheck": true,
     "paths": {
