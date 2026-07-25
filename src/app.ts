@@ -25,7 +25,7 @@ interface UserRateLimit {
 
 const rateLimitMap = new Map<string, UserRateLimit>();
 
-const NUMERO_MAXIMO_MENSAJES = 3;
+const NUMERO_MAXIMO_MENSAJES = 30;
 const MILISEGUNDOS_MAXIMO_MENSAJES = 60000;
 
 /**
