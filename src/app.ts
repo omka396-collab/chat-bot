@@ -15,6 +15,10 @@ const NUMERO_EKOPACK = "4247517912";
 
 const PIE_MENU = "\n\n🔄 Escribe *menu* en cualquier momento para volver al inicio.";
 
+const NUMERO_MAXIMO_MENSAJES = 100;
+const MILISEGUNDOS_MAXIMO_MENSAJES = (60000) * 60;
+const MENSAJE_HORARIOS_ATENCION = "---------------------------------------------------------\n*Horarios de Atención:*\n\n*Lunes a Viernes:* 8:00 AM - 6:00 PM\n*Sábado a Domingo:* Cerrado\n---------------------------------------------------------";
+
 // --- RATE LIMITER EN MEMORIA Y TIPADO ---
 
 interface UserRateLimit {
@@ -24,9 +28,6 @@ interface UserRateLimit {
 }
 
 const rateLimitMap = new Map<string, UserRateLimit>();
-
-const NUMERO_MAXIMO_MENSAJES = 30;
-const MILISEGUNDOS_MAXIMO_MENSAJES = 60000;
 
 /**
  * Middleware para addAction que advierte solo 1 vez y luego silencia.
@@ -52,7 +53,7 @@ const middlewareRateLimit = async (ctx: { from: string }, { endFlow, flowDynamic
       console.warn(`[SPAM BLOCKED & WARNED] Mensaje de: ${phone}`);
 
       await flowDynamic(
-        "⚠️ *Límite de mensajes alcanzado*\n\nHas enviado demasiados mensajes en un periodo corto de tiempo. Por favor, espera un minuto antes de volver a escribir."
+        "⚠️ *Límite de mensajes alcanzado*\n\nHas enviado demasiados mensajes en un periodo corto de tiempo. Por favor, espera una hora antes de volver a escribir."
       );
 
       return endFlow();
@@ -70,7 +71,16 @@ const esComandoMenu = (texto: string): boolean => {
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, ""); // Quita tildes: menú -> menu
-  return limpio === "menu" || limpio === "inicio" || limpio === "menú";
+  return limpio === "menu" || limpio === "inicio" || limpio === "hola" || limpio === "ayuda";
+};
+
+const esComandoPedir = (texto: string): boolean => {
+  const limpio = texto
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, ""); // Quita tildes: pedír -> pedir
+  return limpio.includes("pedir") || limpio.includes("cotizar") || limpio.includes("comprar");
 };
 
 // --- ESTRUCTURA DE DATOS / CATÁLOGOS ---
@@ -132,9 +142,9 @@ const flujoCatalogoBolsas = addKeyword<Provider, Database>(
     ].join("\n"),
     { capture: true },
     async (ctx, { gotoFlow, fallBack }) => {
-      const txt = ctx.body.trim().toLowerCase();
+      const txt = ctx.body.trim();
 
-      if (txt.includes("pedir") || txt.includes("cotizar") || txt.includes("comprar")) {
+      if (esComandoPedir(txt)) {
         return gotoFlow(flujoPedidoBolsas);
       }
       if (esComandoMenu(txt)) {
@@ -163,9 +173,9 @@ const flujoCatalogoHogar = addKeyword<Provider, Database>(
     ].join("\n"),
     { capture: true },
     async (ctx, { gotoFlow, fallBack }) => {
-      const txt = ctx.body.trim().toLowerCase();
+      const txt = ctx.body.trim();
 
-      if (txt.includes("pedir") || txt.includes("cotizar") || txt.includes("comprar")) {
+      if (esComandoPedir(txt)) {
         return gotoFlow(flujoPedidoHogar);
       }
       if (esComandoMenu(txt)) {
@@ -214,7 +224,9 @@ const flujoPedidoBolsas = addKeyword<Provider, Database>(
       "",
       "Para pedidos de bolsas al mayor o detalles de producción, comunícate con la fábrica:",
       "",
-      `📞 *Contacto Americana del Plástico:* +58 ${NUMERO_AMERICANA}` + PIE_MENU,
+      `📞 *Contacto Americana del Plástico:* +58 ${NUMERO_AMERICANA}`,
+      "",
+      MENSAJE_HORARIOS_ATENCION + PIE_MENU,
     ].join("\n")
   );
 
@@ -226,9 +238,11 @@ const flujoPedidoHogar = addKeyword<Provider, Database>(
     [
       "🏪 *Atención de Pedidos - Distribuidora (Ekopack)*",
       "",
-      "Para ventas al detal o mayor de papelería, servilletas e insumos para el hogar:",
+      "Para ventas de papelería, servilletas e insumos para el hogar:",
       "",
-      `📞 *Contacto Ekopack:* +58 ${NUMERO_EKOPACK}` + PIE_MENU,
+      `📞 *Contacto Ekopack:* +58 ${NUMERO_EKOPACK}`,
+      "",
+      MENSAJE_HORARIOS_ATENCION + PIE_MENU,
     ].join("\n")
   );
 
@@ -242,14 +256,18 @@ const flujoPedidoAmbos = addKeyword<Provider, Database>(
       "",
       `📞 Para *Bolsas (Americana del Plástico):* +58 ${NUMERO_AMERICANA}`,
       "",
-      `📞 Para *Servilletas, papel e Insumos del Hogar (Ekopack):* +58 ${NUMERO_EKOPACK}` + PIE_MENU,
+      `📞 Para *Servilletas, papel e Insumos del Hogar (Ekopack):* +58 ${NUMERO_EKOPACK}`,
+      "",
+      MENSAJE_HORARIOS_ATENCION + PIE_MENU,
     ].join("\n")
   );
 
 const flujoPedido = addKeyword<Provider, Database>([
   "pedir",
+  "pedír",
   "comprar",
   "cotizar",
+  "cotízar",
   utils.setEvent("FLUJO_PEDIDO")
 ])
   .addAction(middlewareRateLimit)
@@ -307,8 +325,23 @@ const flujoImpresion = addKeyword<Provider, Database>([
       "",
       "⚠️ *Condición:* Este servicio aplica exclusivamente para pedidos **al mayor / volumen industrial**.",
       "",
-      `📞 *Atención directa en Americana del Plástico:* +58 ${NUMERO_AMERICANA}` + PIE_MENU,
-    ].join("\n")
+      "📲 Escribe *pedir* para canalizar tu solicitud de impresión con la fábrica." + PIE_MENU,
+    ].join("\n"),
+    { capture: true },
+    async (ctx, { gotoFlow, fallBack }) => {
+      const txt = ctx.body.trim();
+
+      if (esComandoPedir(txt)) {
+        return gotoFlow(flujoPedidoBolsas);
+      }
+      if (esComandoMenu(txt)) {
+        return gotoFlow(flujoMenu);
+      }
+
+      return fallBack(
+        "⚠️ Respuesta no válida. Escribe *pedir* para canalizar tu solicitud o *menu* para volver al inicio."
+      );
+    }
   );
 
 const flujoUbicacion = addKeyword<Provider, Database>([
@@ -350,17 +383,22 @@ const flujoPrecios = addKeyword<Provider, Database>([
       "Nuestros costos varían según el volumen de compra y las fluctuaciones de la materia prima.",
       "",
       "Escribe *pedir* para ir directo a cotizaciones y obtener más información directamente con las fábricas." + PIE_MENU,
-    ].join("\n")
-  );
+    ].join("\n"),
+    { capture: true },
+    async (ctx, { gotoFlow, fallBack }) => {
+      const txt = ctx.body.trim();
 
-const flujoDudaHumana = addKeyword<Provider, Database>(
-  utils.setEvent("FLUJO_DUDA")
-)
-  .addAction(middlewareRateLimit)
-  .addAnswer(
-    [
-      "💬 Entendido. Un miembro de nuestro equipo leerá tu mensaje y te responderá en breve por este canal." + PIE_MENU,
-    ].join("\n")
+      if (esComandoPedir(txt)) {
+        return gotoFlow(flujoPedido);
+      }
+      if (esComandoMenu(txt)) {
+        return gotoFlow(flujoMenu);
+      }
+
+      return fallBack(
+        "⚠️ Respuesta no válida. Escribe *pedir* para canalizar tu solicitud o *menu* para volver al inicio."
+      );
+    }
   );
 
 // --- FLUJO PRINCIPAL / MENÚ --- //
@@ -423,22 +461,20 @@ const flujoMenu = addKeyword<Provider, Database>([
   "atencion",
   "atención",
   "asesor",
-  "contacto",
-  "."
+  "contacto"
 ])
   .addAction(middlewareRateLimit)
   .addAnswer(
     [
       "👋 ¡Hola! Bienvenido al servicio de atención al cliente *OMKA*.",
       "",
-      "Selecciona la opción de tu interés enviando un número del 1 al 6:",
+      "Selecciona la opción de tu interés enviando un número del 1 al 5:",
       "",
       "1️⃣ *Catálogo de Productos*",
       "2️⃣ *Realizar un Pedido / Cotización*",
       "3️⃣ *Impresión Personalizada de Bolsas*",
       "4️⃣ *Ubicaciones*",
       "5️⃣ *Consultar Precios*",
-      "6️⃣ *Consultar otra duda con un asesor*",
     ].join("\n"),
     { capture: true },
     async (ctx, { gotoFlow, fallBack }) => {
@@ -449,9 +485,8 @@ const flujoMenu = addKeyword<Provider, Database>([
       if (opcion === "3") return gotoFlow(flujoImpresion);
       if (opcion === "4") return gotoFlow(flujoUbicacion);
       if (opcion === "5") return gotoFlow(flujoPrecios);
-      if (opcion === "6") return gotoFlow(flujoDudaHumana);
 
-      return fallBack("⚠️ Por favor ingresa únicamente un número del 1 al 6 para seleccionar una opción.");
+      return fallBack("⚠️ Por favor ingresa únicamente un número del 1 al 5 para seleccionar una opción.");
     }
   );
 
@@ -478,7 +513,6 @@ const main = async () => {
     flujoImpresion,
     flujoUbicacion,
     flujoPrecios,
-    flujoDudaHumana,
     flujoDefault,
   ]);
 
