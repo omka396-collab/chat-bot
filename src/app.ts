@@ -17,7 +17,7 @@ const PIE_MENU = "\n\n🔄 Escribe *menu* en cualquier momento para volver al in
 
 const NUMERO_MAXIMO_MENSAJES = 100;
 const MILISEGUNDOS_MAXIMO_MENSAJES = (60000) * 60;
-const MENSAJE_HORARIOS_ATENCION = "---------------------------------------------------------\n*Horarios de Atención:*\n\n*Lunes a Viernes:* 8:00 AM - 6:00 PM\n*Sábado a Domingo:* Cerrado\n---------------------------------------------------------";
+const MENSAJE_HORARIOS_ATENCION = "\n*Horarios de Atención:*\n\n*Lunes a Viernes:* 8:00 AM - 6:00 PM\n*Sábado a Domingo:* Cerrado\n";
 
 // --- RATE LIMITER EN MEMORIA Y TIPADO ---
 
@@ -404,64 +404,10 @@ const flujoPrecios = addKeyword<Provider, Database>([
 // --- FLUJO PRINCIPAL / MENÚ --- //
 
 const flujoMenu = addKeyword<Provider, Database>([
-  "hola",
-  "holaa",
-  "holaaa",
-  "holaa!",
-  "hola!",
-  "ola",
-  "olaa",
-  "hello",
-  "hi",
-  "hey",
-  "heyy",
-  "buenas",
-  "buenass",
-  "saludos",
-  "epale",
-  "epa",
-  "qtal",
-  "que tal",
-  "qué tal",
-  "buenos dias",
-  "buenos días",
-  "buenos dia",
-  "buenos día",
-  "buenas tardes",
-  "buena tarde",
-  "buenas noches",
-  "buena noche",
+  EVENTS.WELCOME, // Dispara el menú SOLAMENTE en el primer mensaje de la conversación
   "menu",
   "menú",
-  "inicio",
-  "iniciar",
-  "comenzar",
-  "comienzo",
-  "empezar",
-  "empiezo",
-  "reiniciar",
-  "reset",
-  "volver",
-  "info",
-  "informacion",
-  "información",
-  "mas info",
-  "más información",
-  "más informacion",
-  "ayuda",
-  "opciones",
-  "catalogo",
-  "catálogo",
-  "interesado",
-  "interesada",
-  "me interesa",
-  "quisiera saber",
-  "quiero saber",
-  "consulta",
-  "atencion",
-  "atención",
-  "asesor",
-  "contacto"
+  "inicio"
 ])
   .addAction(middlewareRateLimit)
   .addAnswer(
@@ -486,17 +432,20 @@ const flujoMenu = addKeyword<Provider, Database>([
       if (opcion === "4") return gotoFlow(flujoUbicacion);
       if (opcion === "5") return gotoFlow(flujoPrecios);
 
+      // Si escribe algo distinto del 1 al 5 mientras espera el menú, 
+      // solo envía esta alerta corta sin repetirlos todos.
       return fallBack("⚠️ Por favor ingresa únicamente un número del 1 al 5 para seleccionar una opción.");
     }
   );
-
 // --- FLUJO DEFAULT / FALLBACK ---
 
+/*
 const flujoDefault = addKeyword<Provider, Database>(EVENTS.ACTION)
   .addAction(middlewareRateLimit)
   .addAnswer(
     "💬 En breve te responderá un miembro del equipo de *OMKA* para atender tu consulta de forma personalizada." + PIE_MENU
   );
+*/
 
 // --- INICIALIZACIÓN ---
 
@@ -513,7 +462,7 @@ const main = async () => {
     flujoImpresion,
     flujoUbicacion,
     flujoPrecios,
-    flujoDefault,
+    //flujoDefault,
   ]);
 
   const adapterProvider = createProvider(Provider, {
