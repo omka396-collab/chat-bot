@@ -9,15 +9,17 @@ import {
 import { MemoryDB as Database } from "@builderbot/bot";
 import { MetaProvider as Provider } from "@builderbot/provider-meta";
 
-const PORT = process.env.PORT ?? 3008;
+const PORT = process.env.PORT ? Number(process.env.PORT) : 3008;
 const NUMERO_AMERICANA = "4149746280";
 const NUMERO_EKOPACK = "4247517912";
 
-const PIE_MENU = "\n\n🔄 Escribe *menu* en cualquier momento para volver al inicio.";
+const PIE_MENU =
+  "\n\n🔄 Escribe *menu* en cualquier momento para volver al inicio.";
 
 const NUMERO_MAXIMO_MENSAJES = 100;
-const MILISEGUNDOS_MAXIMO_MENSAJES = (60000) * 60;
-const MENSAJE_HORARIOS_ATENCION = "\n*Horarios de Atención:*\n\n*Lunes a Viernes:* 8:00 AM - 6:00 PM\n*Sábado a Domingo:* Cerrado\n";
+const MILISEGUNDOS_MAXIMO_MENSAJES = 60000 * 60;
+const MENSAJE_HORARIOS_ATENCION =
+  "\n*Horarios de Atención:*\n\n*Lunes a Viernes:* 8:00 AM - 6:00 PM\n*Sábado a Domingo:* Cerrado\n";
 
 // --- RATE LIMITER EN MEMORIA Y TIPADO ---
 
@@ -29,7 +31,13 @@ interface UserRateLimit {
 
 const rateLimitMap = new Map<string, UserRateLimit>();
 
-const middlewareRateLimit = async (ctx: { from: string }, { endFlow, flowDynamic }: { endFlow: () => any; flowDynamic: (msg: string) => Promise<any> }) => {
+const middlewareRateLimit = async (
+  ctx: { from: string },
+  {
+    endFlow,
+    flowDynamic,
+  }: { endFlow: () => any; flowDynamic: (msg: string) => Promise<any> },
+) => {
   const phone = ctx.from;
   const usuario = rateLimitMap.get(phone);
 
@@ -50,7 +58,7 @@ const middlewareRateLimit = async (ctx: { from: string }, { endFlow, flowDynamic
       console.warn(`[SPAM BLOCKED & WARNED] Mensaje de: ${phone}`);
 
       await flowDynamic(
-        "⚠️ *Límite de mensajes alcanzado*\n\nHas enviado demasiados mensajes en un periodo corto de tiempo. Por favor, espera una hora antes de volver a escribir."
+        "⚠️ *Límite de mensajes alcanzado*\n\nHas enviado demasiados mensajes en un periodo corto de tiempo. Por favor, espera una hora antes de volver a escribir.",
       );
 
       return endFlow();
@@ -67,7 +75,12 @@ const esComandoMenu = (texto: string): boolean => {
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
-  return limpio === "menu" || limpio === "inicio" || limpio === "hola" || limpio === "ayuda";
+  return (
+    limpio === "menu" ||
+    limpio === "inicio" ||
+    limpio === "hola" ||
+    limpio === "ayuda"
+  );
 };
 
 const esComandoPedir = (texto: string): boolean => {
@@ -76,7 +89,11 @@ const esComandoPedir = (texto: string): boolean => {
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
-  return limpio.includes("pedir") || limpio.includes("cotizar") || limpio.includes("comprar");
+  return (
+    limpio.includes("pedir") ||
+    limpio.includes("cotizar") ||
+    limpio.includes("comprar")
+  );
 };
 
 const tiposBolsas = [
@@ -115,12 +132,18 @@ const tiposInsumosHogar = [
   { nombre: "Envoltura Plástica" },
 ];
 
-const listaBolsasFormateada = tiposBolsas.map((item) => `✅ ${item.nombre}`).join("\n");
-const listaHogarFormateada = tiposInsumosHogar.map((item) => `✅ ${item.nombre}`).join("\n");
+const listaBolsasFormateada = tiposBolsas
+  .map((item) => `✅ ${item.nombre}`)
+  .join("\n");
+const listaHogarFormateada = tiposInsumosHogar
+  .map((item) => `✅ ${item.nombre}`)
+  .join("\n");
 
 // --- SUBFLUJOS Y FLUJOS (Se mantienen idénticos) ---
 
-const flujoCatalogoBolsas = addKeyword<Provider, Database>(utils.setEvent("CATALOGO_BOLSAS"))
+const flujoCatalogoBolsas = addKeyword<Provider, Database>(
+  utils.setEvent("CATALOGO_BOLSAS"),
+)
   .addAction(middlewareRateLimit)
   .addAnswer(
     [
@@ -130,18 +153,23 @@ const flujoCatalogoBolsas = addKeyword<Provider, Database>(utils.setEvent("CATAL
       "",
       "📌 *Nota:* Los precios se cotizan según el volumen de compra.",
       "",
-      "📲 Escribe *pedir* para solicitar una cotización con la fábrica." + PIE_MENU,
+      "📲 Escribe *pedir* para solicitar una cotización con la fábrica." +
+        PIE_MENU,
     ].join("\n"),
     { capture: true },
     async (ctx, { gotoFlow, fallBack }) => {
       const txt = ctx.body.trim();
       if (esComandoPedir(txt)) return gotoFlow(flujoPedidoBolsas);
       if (esComandoMenu(txt)) return gotoFlow(flujoMenu);
-      return fallBack("⚠️ Respuesta no válida. Escribe *pedir* para cotizar estas bolsas o *menu* para volver al inicio.");
-    }
+      return fallBack(
+        "⚠️ Respuesta no válida. Escribe *pedir* para cotizar estas bolsas o *menu* para volver al inicio.",
+      );
+    },
   );
 
-const flujoCatalogoHogar = addKeyword<Provider, Database>(utils.setEvent("CATALOGO_HOGAR"))
+const flujoCatalogoHogar = addKeyword<Provider, Database>(
+  utils.setEvent("CATALOGO_HOGAR"),
+)
   .addAction(middlewareRateLimit)
   .addAnswer(
     [
@@ -151,18 +179,23 @@ const flujoCatalogoHogar = addKeyword<Provider, Database>(utils.setEvent("CATALO
       "",
       "📌 *Nota:* Los precios se cotizan según el volumen de compra.",
       "",
-      "📲 Escribe *pedir* para solicitar una cotización con la distribuidora." + PIE_MENU,
+      "📲 Escribe *pedir* para solicitar una cotización con la distribuidora." +
+        PIE_MENU,
     ].join("\n"),
     { capture: true },
     async (ctx, { gotoFlow, fallBack }) => {
       const txt = ctx.body.trim();
       if (esComandoPedir(txt)) return gotoFlow(flujoPedidoHogar);
       if (esComandoMenu(txt)) return gotoFlow(flujoMenu);
-      return fallBack("⚠️ Respuesta no válida. Escribe *pedir* para cotizar estos insumos o *menu* para volver al inicio.");
-    }
+      return fallBack(
+        "⚠️ Respuesta no válida. Escribe *pedir* para cotizar estos insumos o *menu* para volver al inicio.",
+      );
+    },
   );
 
-const flujoCatalogo = addKeyword<Provider, Database>(utils.setEvent("FLUJO_CATALOGO"))
+const flujoCatalogo = addKeyword<Provider, Database>(
+  utils.setEvent("FLUJO_CATALOGO"),
+)
   .addAction(middlewareRateLimit)
   .addAnswer(
     [
@@ -180,11 +213,15 @@ const flujoCatalogo = addKeyword<Provider, Database>(utils.setEvent("FLUJO_CATAL
       if (txt === "1") return gotoFlow(flujoCatalogoBolsas);
       if (txt === "2") return gotoFlow(flujoCatalogoHogar);
       if (esComandoMenu(txt)) return gotoFlow(flujoMenu);
-      return fallBack("⚠️ Opción inválida. Por favor responde *1* para Bolsas o *2* para Hogar.");
-    }
+      return fallBack(
+        "⚠️ Opción inválida. Por favor responde *1* para Bolsas o *2* para Hogar.",
+      );
+    },
   );
 
-const flujoPedidoBolsas = addKeyword<Provider, Database>(utils.setEvent("PEDIDO_BOLSAS"))
+const flujoPedidoBolsas = addKeyword<Provider, Database>(
+  utils.setEvent("PEDIDO_BOLSAS"),
+)
   .addAction(middlewareRateLimit)
   .addAnswer(
     [
@@ -195,10 +232,12 @@ const flujoPedidoBolsas = addKeyword<Provider, Database>(utils.setEvent("PEDIDO_
       `📞 *Contacto Americana del Plástico:* +58 ${NUMERO_AMERICANA}`,
       "",
       MENSAJE_HORARIOS_ATENCION + PIE_MENU,
-    ].join("\n")
+    ].join("\n"),
   );
 
-const flujoPedidoHogar = addKeyword<Provider, Database>(utils.setEvent("PEDIDO_HOGAR"))
+const flujoPedidoHogar = addKeyword<Provider, Database>(
+  utils.setEvent("PEDIDO_HOGAR"),
+)
   .addAction(middlewareRateLimit)
   .addAnswer(
     [
@@ -209,10 +248,12 @@ const flujoPedidoHogar = addKeyword<Provider, Database>(utils.setEvent("PEDIDO_H
       `📞 *Contacto Ekopack:* +58 ${NUMERO_EKOPACK}`,
       "",
       MENSAJE_HORARIOS_ATENCION + PIE_MENU,
-    ].join("\n")
+    ].join("\n"),
   );
 
-const flujoPedidoAmbos = addKeyword<Provider, Database>(utils.setEvent("PEDIDO_AMBOS"))
+const flujoPedidoAmbos = addKeyword<Provider, Database>(
+  utils.setEvent("PEDIDO_AMBOS"),
+)
   .addAction(middlewareRateLimit)
   .addAnswer(
     [
@@ -223,10 +264,17 @@ const flujoPedidoAmbos = addKeyword<Provider, Database>(utils.setEvent("PEDIDO_A
       `📞 Para *Servilletas, papel e Insumos del Hogar (Ekopack):* +58 ${NUMERO_EKOPACK}`,
       "",
       MENSAJE_HORARIOS_ATENCION + PIE_MENU,
-    ].join("\n")
+    ].join("\n"),
   );
 
-const flujoPedido = addKeyword<Provider, Database>(["pedir", "pedír", "comprar", "cotizar", "cotízar", utils.setEvent("FLUJO_PEDIDO")])
+const flujoPedido = addKeyword<Provider, Database>([
+  "pedir",
+  "pedír",
+  "comprar",
+  "cotizar",
+  "cotízar",
+  utils.setEvent("FLUJO_PEDIDO"),
+])
   .addAction(middlewareRateLimit)
   .addAnswer(
     [
@@ -245,11 +293,19 @@ const flujoPedido = addKeyword<Provider, Database>(["pedir", "pedír", "comprar"
       if (txt === "2") return gotoFlow(flujoPedidoHogar);
       if (txt === "3") return gotoFlow(flujoPedidoAmbos);
       if (esComandoMenu(txt)) return gotoFlow(flujoMenu);
-      return fallBack("⚠️ Opción inválida. Por favor responde con *1*, *2* o *3*.");
-    }
+      return fallBack(
+        "⚠️ Opción inválida. Por favor responde con *1*, *2* o *3*.",
+      );
+    },
   );
 
-const flujoImpresion = addKeyword<Provider, Database>(["impresion", "impresión", "estampado", "personalizado", utils.setEvent("FLUJO_IMPRESION")])
+const flujoImpresion = addKeyword<Provider, Database>([
+  "impresion",
+  "impresión",
+  "estampado",
+  "personalizado",
+  utils.setEvent("FLUJO_IMPRESION"),
+])
   .addAction(middlewareRateLimit)
   .addAnswer(
     [
@@ -274,18 +330,29 @@ const flujoImpresion = addKeyword<Provider, Database>(["impresion", "impresión"
       "",
       "⚠️ *Condición:* Este servicio aplica exclusivamente para pedidos **al mayor / volumen industrial**.",
       "",
-      "📲 Escribe *pedir* para canalizar tu solicitud de impresión con la fábrica." + PIE_MENU,
+      "📲 Escribe *pedir* para canalizar tu solicitud de impresión con la fábrica." +
+        PIE_MENU,
     ].join("\n"),
     { capture: true },
     async (ctx, { gotoFlow, fallBack }) => {
       const txt = ctx.body.trim();
       if (esComandoPedir(txt)) return gotoFlow(flujoPedidoBolsas);
       if (esComandoMenu(txt)) return gotoFlow(flujoMenu);
-      return fallBack("⚠️ Respuesta no válida. Escribe *pedir* para canalizar tu solicitud o *menu* para volver al inicio.");
-    }
+      return fallBack(
+        "⚠️ Respuesta no válida. Escribe *pedir* para canalizar tu solicitud o *menu* para volver al inicio.",
+      );
+    },
   );
 
-const flujoUbicacion = addKeyword<Provider, Database>(["ubicacion", "ubicación", "donde estan", "dónde están", "direccion", "dirección", utils.setEvent("FLUJO_UBICACION")])
+const flujoUbicacion = addKeyword<Provider, Database>([
+  "ubicacion",
+  "ubicación",
+  "donde estan",
+  "dónde están",
+  "direccion",
+  "dirección",
+  utils.setEvent("FLUJO_UBICACION"),
+])
   .addAction(middlewareRateLimit)
   .addAnswer(
     [
@@ -298,10 +365,16 @@ const flujoUbicacion = addKeyword<Provider, Database>(["ubicacion", "ubicación"
       "San Cristóbal, Estado Táchira.",
       "",
       "🌐 *Atención y Envíos:* Cobertura únicamente en Venezuela." + PIE_MENU,
-    ].join("\n")
+    ].join("\n"),
   );
 
-const flujoPrecios = addKeyword<Provider, Database>(["precio", "precios", "costo", "costos", utils.setEvent("FLUJO_PRECIOS")])
+const flujoPrecios = addKeyword<Provider, Database>([
+  "precio",
+  "precios",
+  "costo",
+  "costos",
+  utils.setEvent("FLUJO_PRECIOS"),
+])
   .addAction(middlewareRateLimit)
   .addAnswer(
     [
@@ -309,18 +382,26 @@ const flujoPrecios = addKeyword<Provider, Database>(["precio", "precios", "costo
       "",
       "Nuestros costos varían según el volumen de compra y las fluctuaciones de la materia prima.",
       "",
-      "Escribe *pedir* para ir directo a cotizaciones y obtener más información directamente con las fábricas." + PIE_MENU,
+      "Escribe *pedir* para ir directo a cotizaciones y obtener más información directamente con las fábricas." +
+        PIE_MENU,
     ].join("\n"),
     { capture: true },
     async (ctx, { gotoFlow, fallBack }) => {
       const txt = ctx.body.trim();
       if (esComandoPedir(txt)) return gotoFlow(flujoPedido);
       if (esComandoMenu(txt)) return gotoFlow(flujoMenu);
-      return fallBack("⚠️ Respuesta no válida. Escribe *pedir* para canalizar tu solicitud o *menu* para volver al inicio.");
-    }
+      return fallBack(
+        "⚠️ Respuesta no válida. Escribe *pedir* para canalizar tu solicitud o *menu* para volver al inicio.",
+      );
+    },
   );
 
-const flujoMenu = addKeyword<Provider, Database>([EVENTS.WELCOME, "menu", "menú", "inicio"])
+const flujoMenu = addKeyword<Provider, Database>([
+  EVENTS.WELCOME,
+  "menu",
+  "menú",
+  "inicio",
+])
   .addAction(middlewareRateLimit)
   .addAnswer(
     [
@@ -342,8 +423,10 @@ const flujoMenu = addKeyword<Provider, Database>([EVENTS.WELCOME, "menu", "menú
       if (opcion === "3") return gotoFlow(flujoImpresion);
       if (opcion === "4") return gotoFlow(flujoUbicacion);
       if (opcion === "5") return gotoFlow(flujoPrecios);
-      return fallBack("⚠️ Por favor ingresa únicamente un número del 1 al 5 para seleccionar una opción.");
-    }
+      return fallBack(
+        "⚠️ Por favor ingresa únicamente un número del 1 al 5 para seleccionar una opción.",
+      );
+    },
   );
 
 // --- INICIALIZACIÓN CON META PROVIDER ---
@@ -364,7 +447,8 @@ const main = async () => {
   ]);
 
   const adapterProvider = createProvider(Provider, {
-    jwtToken: "EAAPBtzSvgZBEBSJhVAT3OkInWi6jkJ6LdjgrONZCTXZBAZCDcMx0uHhggk0cCClzrs4qL8kLsfvWKf9wR1dpGzyYzjaNb41z4CwlZB2drsCLUp2ttqPWWU89gA6ZCL7uHhZAZBOVkpRBq57T7I817c6pM3ZCxOd4yRuZBubkIfR3uKI1Tk6DKZCadeXWFCm1XypbMFFzgZDZD",
+    jwtToken:
+      "EAAPBtzSvgZBEBSJhVAT3OkInWi6jkJ6LdjgrONZCTXZBAZCDcMx0uHhggk0cCClzrs4qL8kLsfvWKf9wR1dpGzyYzjaNb41z4CwlZB2drsCLUp2ttqPWWU89gA6ZCL7uHhZAZBOVkpRBq57T7I817c6pM3ZCxOd4yRuZBubkIfR3uKI1Tk6DKZCadeXWFCm1XypbMFFzgZDZD",
     numberId: "1245071678684010",
     verifyToken: "omka_verify_token_123", // Puedes inventar una clave de verificación para el webhook
     version: "v25.0",
@@ -378,7 +462,7 @@ const main = async () => {
     database: adapterDB,
   });
 
-  httpServer(+PORT);
+  httpServer(PORT);
 };
 
 main();
